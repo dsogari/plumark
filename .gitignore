@@ -1,0 +1,12 @@
+dist/
+generated/
+node_modules/
+public/
+.vscode/*  
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+.DS_Store
+local.*
+*.log
+*.vsix

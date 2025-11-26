@@ -1,0 +1,25 @@
+{
+  "name": "@doml/core",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://dsogari.github.io/doml",
+  "description": "Core Syntax & Specification of the DoML language.",
+  "keywords": [
+    "language",
+    "markdown",
+    "markup"
+  ],
+  "repository": {
+    "url": "git+https://github.com/dsogari/doml.git",
+    "directory": "packages/core"
+  },
+  "author": {
+    "name": "Diego Sogari",
+    "email": "diego.sogari@gmail.com",
+    "url": "https://github.com/dsogari"
+  },
+  "scripts": {
+    "build": "echo 'hello world'"
+  }
+}
