@@ -1,3 +1,3 @@
-# @doml/core
+# @plumark/core
 
-Core Syntax & Specification of the DoML language.
+Core Syntax & Specification of the Plumark language.

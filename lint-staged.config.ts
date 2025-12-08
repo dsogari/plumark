@@ -11,4 +11,8 @@ export default {
     'bun run --cwd packages/core build',
     'publint --strict packages/core', // publint needs the dist files
   ],
+  'packages/plumark/**/*': () => [
+    'bun run --cwd packages/plumark build',
+    'publint --strict packages/plumark', // publint needs the dist files
+  ],
 } as const satisfies Configuration;
