@@ -3,7 +3,8 @@ import type { CSpellUserSettings } from '@cspell/cspell-types';
 export default {
   version: '0.2',
   language: 'en',
-  ignoreWords: ['Plumark', 'TypeScript', 'Sogari'],
-  ignorePaths: ['**/*.{js,ts,md,jsx,tsx,mdx,json,jsonc,json5,svg}'],
+  words: ['sidenote', 'codepoint', 'frontmatter'],
+  ignoreWords: ['Plumark', 'TypeScript', 'Sogari', 'pmark'],
+  ignorePaths: ['**/*.{js,ts,jsx,tsx,mdx,json,jsonc,json5,svg}'],
   useGitignore: true,
 } as CSpellUserSettings;
