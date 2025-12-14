@@ -239,12 +239,12 @@ snippet with inline `snippet`
 
 Although opaque to the parser, literal content is handled specially by the renderer according to element type:
 
-| Element    | Rendered as                                                 |
-| ---------- | ----------------------------------------------------------- |
-| _snippet_  | sanitized; spaces preserved; monospaced; syntax-highlighted |
-| _math_     | generated markup or script (KaTeX, MathJax)                 |
-| _verbatim_ | raw markup code (HTML, LaTeX)                               |
-| all others | sanitized; spaces collapsed                                 |
+| Element    | Rendered as                                                   |
+| ---------- | ------------------------------------------------------------- |
+| _snippet_  | sanitized; spaces preserved; monospaced; syntax-highlighted   |
+| _math_     | generated markup or script (KaTeX, MathJax, backend-specific) |
+| _verbatim_ | raw markup code (HTML, LaTeX, backend-specific)               |
+| all others | sanitized; spaces collapsed                                   |
 
 ### Lists
 
@@ -405,25 +405,19 @@ Here's a (non-exhaustive) list of components that deserve support:
 | _filter_             | `div`, `search`, `input`      | Child filtering      |
 | _progress_           | `progress`                    | Completion indicator |
 
-If a component can be subject to [cross-referencing](#cross-referencing), it should offer a `label` attribute.
+If a component can be subject to [cross-referencing](#cross-referencing), it should offer the appropriate attributes.
 
 ## Processing
 
 The **processing** constructs are typically handled before parsing. They appear within angled brackets:
 
-| Syntax              | Meaning    | Inline |
-| ------------------- | ---------- | ------ |
-| `<? directive ?>`   | evaluation | ❌     |
-| `<% comment %>`     | annotation | ☑️     |
-| `<namespace:label>` | reference  | ☑️     |
-| `<$variable>`       | expansion  | ☑️     |
-
-The processor is responsible for:
-
-- stripping **comments** out;
-- storing state in the form of document **metadata**;
-- performing a two-pass algorithm to resolve cross-**references**;
-- interpolating **variables** using the values stored in metadata.
+| Syntax              | Meaning    | Inline | Notes                                |
+| ------------------- | ---------- | ------ | ------------------------------------ |
+| `<? directive ?>`   | evaluation | ❌     | state is stored as document metadata |
+| `<@series attr...>` | definition | ❌     | cross-reference scope                |
+| `<% comment %>`     | annotation | ☑️     | stripped out                         |
+| `<$variable>`       | expansion  | ☑️     | value interpolated from metadata     |
+| `<label>`           | reference  | ☑️     | two-pass resolution algorithm        |
 
 This section discusses the various types of processing, how they can affect the rendering pipeline, and related concepts.
 
@@ -461,21 +455,60 @@ Transcluded documents are primarily intended as _structural fragments_ rather th
 
 The **branching**, **repetition** and **selection** instructions are the standard mechanisms used for _flow control_ in programming languages and behave the same way here.
 
-### Cross-referencing
+### Series definition
 
-A **cross-reference** is a _link_ to an auto-numbered element. The processor looks up the number assigned to the referenced element and places a link to it at the invocation point.
+Referable elements must belong to a **series**, which can be defined through a **definition** block. It accepts the name of the series and a set of attributes:
 
-Referable elements are numbered separately per _namespace_. User-defined namespaces (`/\w+/`) can appear as prefix in an element's `label` attribute: `namespace:label`.
+| Attribute   | Meaning                                                                    |
+| ----------- | -------------------------------------------------------------------------- |
+| `types`     | space-separated list of element types for which it is the _default_ series |
+| `sequence`  | the numbering scheme (Arabic, Latin, Roman, Symbol)                        |
+| `caption`   | template for the element's caption                                         |
+| `placement` | relative placement of the caption                                          |
+| `ref`       | template for the inline reference                                          |
+| `backref`   | template for the back-reference                                            |
 
-If the namespace is omitted, the element will be registered in the _default_ namespace and must be referenced in the same way — without namespace. E.g.:
+In template attributes, the following parameters are allowed:
+
+| Parameter | Meaning            | Example         |
+| --------- | ------------------ | --------------- |
+| `%d`      | element designator | `1`,`A`,`I`,`*` |
+| `%s`      | element title      | `My figure`     |
+| `%l`      | element label      | `my-fig`        |
+| `%r`      | return location    | generated       |
+
+Here's the list of predefined series (which can be redefined if needed):
+
+| Series     | Types     | Sequence | Caption           | Placement | Ref                | Backref      |
+| ---------- | --------- | -------- | ----------------- | --------- | ------------------ | ------------ |
+| `figure`   | _media_   | Arabic   | `Figure %d — %s`  | below     | `Fig. @[%d]('%l')` |              |
+| `table`    | _table_   | Arabic   | `Table %d — %s`   | above     | `Tab. @[%d]('%l')` |              |
+| `section`  | _heading_ | Arabic   | `%d.`             | inline    | `Sec. @[%d]('%l')` |              |
+| `footnote` | _note_    | Arabic   | `^[%d]`           | inline    | `@[^[%d]]('%l')`   | `@[↩]('%r')` |
+| `example`  | _snippet_ | Arabic   | `Example %d — %s` | above     | `Ex. @[%d]('%l')`  |              |
+| `equation` | _math_    | Arabic   | `(%d)`            | right     | `Eq. @[%d]('%l')`  |              |
+
+Here's an example of overriding the footnote series definition to include brackets:
 
 ```text
-See footnote<1>.
-
-.('1') footnote
+<@footnote caption="^`[%d]`" ref="@[^`[%d]`]('%l')" >
 ```
 
-Note that generated markup may be subject to additional formatting, such as superscript for footnotes.
+### Cross-referencing
+
+A **cross-reference** is a reference to an enumerated element. The processor looks up the designator assigned to the referred element and places a reference to it at the invocation point.
+
+An element can be configured to be referable through a set of related attributes:
+
+| Attribute | Meaning                                 |
+| --------- | --------------------------------------- |
+| `label`   | unique identifier (required for xref)   |
+| `title`   | element description                     |
+| `series`  | containing [series](#series-definition) |
+
+A referable element is enumerated by assigning it the next designator from its series' sequence. For footnote series, the sequence advances at each encountered reference; for all other series, it advances at each labeled element.
+
+Note that a footnote is not rendered unless it is referenced.
 
 ### Variable expansion
 
