@@ -9,7 +9,7 @@ A **Plumark** document (`.plu` or `.pmark`) can be composed with four essential 
 
 ## Frontmatter
 
-The **frontmatter** block comprises _opaque_ content (i.e., uninterpreted by the parser) that can be used by renderers for tooling purposes — e.g., CSS stylesheet, YAML/TOML configuration.
+The **frontmatter** block comprises content that is not interpreted by the parser, but can be used by renderers for tooling purposes — e.g., CSS stylesheet, YAML/TOML configuration.
 
 If present, it must appear at the beginning of the document within a dashed fence:
 
@@ -23,7 +23,7 @@ frontmatter (opaque)
 
 Any text that is not recognized as frontmatter, processing, or escape sequence is considered **markup**. Markup is divided into **elements**, which can be classified both in terms of how they are _framed_ (or _marked out_) in the source document and how they are _presented_ (or _laid out_) in the rendered output.
 
-In the source, elements follow a coherent, precise, and flexible syntax. They can have **content**, which may contain arbitrarily nested markup; and their behavior can be configured through markup **attributes**, organized in an associative array.
+In the source, elements follow a coherent, precise, and flexible syntax. They can have **content**, which may contain arbitrarily nested markup; and their behavior can be configured through markup **attributes**, organized as an associative array.
 
 This section describes the various types of markup elements, how they can be instantiated, their rendering implications, and related concepts.
 
@@ -37,7 +37,9 @@ Markup elements can be instantiated in different formats, depending on their arr
 | _inline_    | inline | ☑️        | single-line; possibly surrounded by text                        |
 | _multiline_ | block  | ☑️        | must be flushed out; can span multiple lines                    |
 
-Depending on configuration, some elements may be rendered in a _floating_ layout (e.g., floating image or marginal note).
+When an element appears both flushed out _and_ delimited on a single line, its layout will depend on its type: if it supports inline mode, the layout will be inline; otherwise, it will be block.
+
+Furthermore, depending on configuration, some elements may be rendered in _floating_ layout (e.g., floating image or marginal note).
 
 ### Markup element
 
@@ -78,10 +80,10 @@ The more interesting elements are summarized below — all of them support _mult
 | `[check][box]`          | `input`, `label`             | checklist            |           | ☑️   | ❌     |
 | `{name}[component]`     | `script`, generated          | semantic block       |           | ☑️   | ❌     |
 | `[ table cell \| ... ]` | `table` `tr`, `th`, `td`     | table row            | label     | ❌   | ❌     |
-| `<[left-aligned]`       | `p`, `text-align`            | text alignment       | max-width | ☑️   | ❌     |
-| `>[right-aligned]`      | `p`, `text-align`            | text alignment       | max-width | ☑️   | ❌     |
-| `><[centered]`          | `p`, `text-align`            | text alignment       | max-width | ☑️   | ❌     |
-| `<>[justified]`         | `p`, `text-align`            | text alignment       | max-width | ☑️   | ❌     |
+| `<[left-aligned]`       | `p`, `text-align`            | text alignment       |           | ☑️   | ❌     |
+| `>[right-aligned]`      | `p`, `text-align`            | text alignment       |           | ☑️   | ❌     |
+| `><[centered]`          | `p`, `text-align`            | text alignment       |           | ☑️   | ❌     |
+| `<>[justified]`         | `p`, `text-align`            | text alignment       |           | ☑️   | ❌     |
 
 ### Markup syntax
 
@@ -114,7 +116,7 @@ The **sigil** introduces a markup element. It generally consists of one or two p
 | _ordered list item_ | variable-length word, ending with a dot             | `11.`, `xi.`, `aa.` |
 | _checkbox_          | one character enclosed in square brackets           | `[ ]`, `[x]`, `[✓]` |
 | _table row_         | at least two characters enclosed in square brackets | `[a ]`, `[ a]`      |
-| _component_         | identifier enclosed in curly braces (with no space) | `{name}`            |
+| _component_         | identifier enclosed in curly braces (without space) | `{name}`            |
 | _snippet_           | language identifier (when followed by a backtick)   | `lang`              |
 
 ### Attribute block
@@ -128,10 +130,10 @@ identifier = `literal multiline
 string`)
 ```
 
-The following rules apply:
+It is subject to the following rules:
 
 - Interspace is ignored. (including line breaks)
-- Identifiers must satisfy the regex `/[\w:-]+/`.
+- Identifiers must satisfy the regex `/[^\s=]+/`.
 - Escape sequences are allowed in quoted strings.
 - Prefiguration and configuration are merged in that order.
 - Repeated assignments simply overwrite the attribute value.
@@ -214,7 +216,7 @@ A text block enclosed in backticks comprises **literal** content:
 *`bold text with *[mock <markup>]`
 cpp`void func()`
 ts``
-const abc = `my string`;
+const str = `my string`;
 ``
 $`1+2=3`
 $`
@@ -242,15 +244,15 @@ Although opaque to the parser, literal content is handled specially by the rende
 | Element    | Rendered as                                                   |
 | ---------- | ------------------------------------------------------------- |
 | _snippet_  | sanitized; spaces preserved; monospaced; syntax-highlighted   |
-| _math_     | generated markup or script (KaTeX, MathJax, backend-specific) |
-| _verbatim_ | raw markup code (HTML, LaTeX, backend-specific)               |
+| _math_     | generated markup or script; backend-specific (KaTeX, MathJax) |
+| _verbatim_ | raw markup code; backend-specific (HTML, LaTeX)               |
 | all others | sanitized; spaces collapsed                                   |
 
 ### Lists
 
 There are four kinds of natively-supported **lists**:
 
-| List        | Nestable |
+| List type   | Nestable |
 | ----------- | -------- |
 | _glossary_  | ❌       |
 | _unordered_ | ☑️       |
@@ -259,7 +261,7 @@ There are four kinds of natively-supported **lists**:
 
 The available item types for each kind of list are:
 
-| Sigil | Used for        | List      |
+| Sigil | Used for        | List type |
 | ----- | --------------- | --------- |
 | `:`   | topic           | glossary  |
 | `=`   | description     | glossary  |
@@ -273,11 +275,11 @@ The available item types for each kind of list are:
 | `[x]` | checked box     | checklist |
 | `[✓]` | checked box     | checklist |
 
-The first item in an ordered list is called the _leader_: it establishes the numbering scheme, so that list items can be rendered accordingly and the formatter can normalize item sigils based on it.
+The first item in an ordered list is called the _leader_: it establishes the numbering scheme, so that list items can be rendered uniformly — and the formatter can normalize item sigils based on it.
 
 #### List nesting
 
-The dash symbol (`-`) serves an additional function — it can be used as level indicator for nestable items:
+The dash symbol (`-`) serves an additional purpose — it can be used as level indicator for nestable items:
 
 ```text
 - item
@@ -296,7 +298,7 @@ The dash symbol (`-`) serves an additional function — it can be used as level 
   -[✓] subitem 2
 ```
 
-This behavior can still be accomplished through the more general, multiline syntax:
+The same behavior can be accomplished through the more general, _multiline_ mode:
 
 ```text
 A.[
@@ -308,7 +310,7 @@ A.[
 ]
 ```
 
-The parser ignores indentation, although the formatter can normalize it based on the nesting level (whether encoded in the sigil or deduced from bracket pairing).
+Indentation is ignored, although the formatter can normalize it based on the nesting level (whether encoded in the sigil or deduced from bracket pairing).
 
 ### Tables
 
@@ -324,7 +326,7 @@ The general syntax for **tables** is:
 ]
 ```
 
-The pipe symbol (`|`) separates cells within a row. Rows can have an arbitrary number of cells, regardless of other rows. The number of columns in a table is determined by the row with the highest number of cells. Cells are assigned to columns from left to right, in the order they appear in the source document.
+The pipe symbol (`|`) delimits cells within a row. Each row may have a different number of cells, which are assigned to columns from left to right, in the order they appear in the source document. The number of columns in a table is determined by the row with the most cells.
 
 #### Header cell
 
@@ -336,7 +338,7 @@ If a table cell begins with a hashtag (`#`), it is considered the **header** of 
 [ # header | 3        | 4        ]
 ```
 
-The exact meaning of a header cell depends on the renderer. Typically, a header in the top row is considered a column header; similarly, a header in the leftmost column is considered a row header. Column headers take precedence over row headers.
+The exact meaning of a header cell depends on the renderer. Typically, a header in the top row is regarded as column header; similarly, a header in the leftmost column is regarded as row header. Column headers take precedence over row headers.
 
 #### Divisor row
 
@@ -359,16 +361,16 @@ Table rows accept table-level and row-level **attributes**:
 [ cell | cell | cell ]('my-table')
 [ ---- | ---- | ---- ](line = 'dashed')
 [ 1    | 2    | 3    ](color = 'red')
-[ 1 2         |    3 ](align = 'l-|r')
-[    1 | 2 3         ](align = 'r|j-')
-[       1 2 3        ](align = 'c--')
+[ 1 & 2       |    3 ](align = 'l-|r')
+[    1 | 2 & 3       ](align = 'r|j-')
+[     1 & 2 & 3      ](align = 'c--')
 ```
 
-Here's a (non-exhaustive) list of attributes that deserve support:
+Here's a (non-exhaustive) list of attributes that deserve support by renderers:
 
 | Name    | HTML/CSS                | Level | Notes                       |
 | ------- | ----------------------- | ----- | --------------------------- |
-| _label_ | `id`                    | table | label for cross-references  |
+| _label_ | `id`                    | table | label for cross-referencing |
 | _class_ | `class`                 | table | preset table style          |
 | _color_ | `style`                 | row   | emphasis color              |
 | _line_  | `border`                | row   | border line type            |
@@ -385,7 +387,7 @@ This design is intentional, to avoid syntax overload inside table rows. The form
 
 The primary way to extend rendering capabilities is through **components**. These elements can provide non-textual cues, interactive behavior, or code-driven visualization — maps, plots, graphs, charts, diagrams, etc.
 
-Here's a (non-exhaustive) list of components that deserve support:
+Here's a (non-exhaustive) list of components that deserve support by renderers:
 
 | Name                 | HTML                          | Notes                |
 | -------------------- | ----------------------------- | -------------------- |
@@ -409,15 +411,17 @@ If a component can be subject to [cross-referencing](#cross-referencing), it sho
 
 ## Processing
 
-The **processing** constructs are typically handled before parsing. They appear within angled brackets:
+Processing constructs are handled by the language **processor**, typically before parsing. They appear within angled brackets:
 
-| Syntax              | Meaning    | Inline | Notes                                |
-| ------------------- | ---------- | ------ | ------------------------------------ |
-| `<? directive ?>`   | evaluation | ❌     | state is stored as document metadata |
-| `<@series attr...>` | definition | ❌     | cross-reference scope                |
-| `<% comment %>`     | annotation | ☑️     | stripped out                         |
-| `<$variable>`       | expansion  | ☑️     | value interpolated from metadata     |
-| `<label>`           | reference  | ☑️     | two-pass resolution algorithm        |
+| Syntax              | Meaning     | Inline | Notes                                |
+| ------------------- | ----------- | ------ | ------------------------------------ |
+| `<? directive ?>`   | evaluation  | ❌     | state is stored as document metadata |
+| `<@entity attr...>` | declaration | ❌     | cross-reference scope                |
+| `<&label>`          | reference   | ☑️     | two-pass resolution algorithm        |
+| `<$variable>`       | expansion   | ☑️     | value interpolated from metadata     |
+| `<% comment %>`     | commentary  | ☑️     | stripped out                         |
+
+Note that any text not starting with `<` + sigil has no intrinsic meaning in prose and is treated as literal text. Non-supported sigils (ASCII punctuation) are reserved for future use.
 
 This section discusses the various types of processing, how they can affect the rendering pipeline, and related concepts.
 
@@ -455,20 +459,27 @@ Transcluded documents are primarily intended as _structural fragments_ rather th
 
 The **branching**, **repetition** and **selection** instructions are the standard mechanisms used for _flow control_ in programming languages and behave the same way here.
 
-### Series definition
+### Entity declaration
 
-Referable elements must belong to a **series**, which can be defined through a **definition** block. It accepts the name of the series and a set of attributes:
+The **declaration** construct exists solely to configure the processor itself. It introduces or modifies an abstract, unobservable entity that may change interpretation rules.
 
-| Attribute   | Meaning                                                                    |
-| ----------- | -------------------------------------------------------------------------- |
-| `types`     | space-separated list of element types for which it is the _default_ series |
-| `sequence`  | the numbering scheme (Arabic, Latin, Roman, Symbol)                        |
-| `caption`   | template for the element's caption                                         |
-| `placement` | relative placement of the caption                                          |
-| `ref`       | template for the inline reference                                          |
-| `backref`   | template for the back-reference                                            |
+Currently, it has a single use-case: declaring cross-reference scopes (a.k.a. series).
 
-In template attributes, the following parameters are allowed:
+#### Series
+
+Every _referable_ element (i.e., subject to cross-referencing) must belong to a **series**, which can be configured through a set of attributes:
+
+| Attribute   | Meaning                                                    |
+| ----------- | ---------------------------------------------------------- |
+| `type`      | entity type (`series`)                                     |
+| `selector`  | list of element types for which it is the _default_ series |
+| `sequence`  | the numbering scheme (Arabic, Latin, Roman, Symbol)        |
+| `caption`   | template for the element's caption                         |
+| `placement` | relative placement of the caption                          |
+| `ref`       | template for the inline reference                          |
+| `backref`   | template for the back-reference                            |
+
+In templated attributes, the following parameters are allowed:
 
 | Parameter | Meaning            | Example         |
 | --------- | ------------------ | --------------- |
@@ -477,9 +488,9 @@ In template attributes, the following parameters are allowed:
 | `%l`      | element label      | `my-fig`        |
 | `%r`      | return location    | generated       |
 
-Here's the list of predefined series (which can be redefined if needed):
+Here's a list of predefined series (which can be modified if needed):
 
-| Series     | Types     | Sequence | Caption           | Placement | Ref                | Backref      |
+| Series     | Selector  | Sequence | Caption           | Placement | Ref                | Backref      |
 | ---------- | --------- | -------- | ----------------- | --------- | ------------------ | ------------ |
 | `figure`   | _media_   | Arabic   | `Figure %d — %s`  | below     | `Fig. @[%d]('%l')` |              |
 | `table`    | _table_   | Arabic   | `Table %d — %s`   | above     | `Tab. @[%d]('%l')` |              |
@@ -488,7 +499,7 @@ Here's the list of predefined series (which can be redefined if needed):
 | `example`  | _snippet_ | Arabic   | `Example %d — %s` | above     | `Ex. @[%d]('%l')`  |              |
 | `equation` | _math_    | Arabic   | `(%d)`            | right     | `Eq. @[%d]('%l')`  |              |
 
-Here's an example of overriding the footnote series definition to include brackets:
+Here's an example of overriding the footnote series declaration to include brackets:
 
 ```text
 <@footnote caption="^`[%d]`" ref="@[^`[%d]`]('%l')" >
@@ -500,15 +511,15 @@ A **cross-reference** is a reference to an enumerated element. The processor loo
 
 An element can be configured to be referable through a set of related attributes:
 
-| Attribute | Meaning                                 |
-| --------- | --------------------------------------- |
-| `label`   | unique identifier (required for xref)   |
-| `title`   | element description                     |
-| `series`  | containing [series](#series-definition) |
+| Attribute | Meaning                               |
+| --------- | ------------------------------------- |
+| `label`   | unique identifier (required for xref) |
+| `title`   | element description                   |
+| `series`  | owning [series](#series)              |
 
-A referable element is enumerated by assigning it the next designator from its series' sequence. For footnote series, the sequence advances at each encountered reference; for all other series, it advances at each labeled element.
+A referable element is enumerated by assigning it the next designator from its series' sequence. But sequences only advance when elements are _rendered_.
 
-Note that a footnote is not rendered unless it is referenced.
+Because footnotes are rendered only when referenced, their sequence advances at each encountered reference; for all other series, the sequence advances at each labeled element.
 
 ### Variable expansion
 
